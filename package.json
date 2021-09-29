@@ -1,0 +1,33 @@
+{
+  "name": "@loadfms/gotdone",
+  "version": "1.0.5",
+  "description": "A new and joyfull way to track your things.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "bin": {
+    "gotdone": "index.js"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "bar-charts": "^1.0.3",
+    "chalk": "^4.1.2",
+    "moment": "^2.29.1",
+    "yargs": "^17.2.1"
+  },
+  "devDependencies": {
+    "eslint": "^7.32.0",
+    "eslint-config-airbnb-base": "^14.2.1",
+    "eslint-plugin-import": "^2.24.2"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/loadfms/gotdone.git"
+  },
+  "bugs": {
+    "url": "https://github.com/loadfms/gotdone/issues"
+  },
+  "homepage": "https://github.com/loadfms/gotdone#readme"
+}
