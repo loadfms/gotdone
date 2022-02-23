@@ -1,32 +1,67 @@
 #! /usr/bin/env node
-const yargs = require('yargs/yargs');
-const { hideBin } = require('yargs/helpers');
-const barChart = require('bar-charts');
-const chalk = require('chalk');
-const fs = require('fs');
-const moment = require('moment');
+import chalk from 'chalk';
+import barChart from 'bar-charts';
+import yargs from 'yargs';
+import { hideBin } from 'yargs/helpers';
+import fs from 'fs';
+import moment from 'moment';
 
 function getUserRootFolder() {
   return process.env.HOME || process.env.HOMEPATH || process.env.USERPROFILE;
 }
 
-const csvFilename = `${getUserRootFolder()}/.gotdone`;
+function getConfigFolder() {
+  return `${getUserRootFolder()}/.config/gotdone/config`;
+}
 
-function writeData(description) {
+let dataPath = `${getUserRootFolder()}`;
+
+function getDataFolder() {
+  return `${dataPath}/data`;
+}
+
+function loadConfig() {
   return new Promise((resolve) => {
-    fs.writeFile(csvFilename, `${moment(new Date()).format('DD/MM/YYYY')},${description}\r\n`, { flag: 'a+' }, (err) => {
-      if (err) return console.log(err);
-      console.log(chalk.green('Awesome! Grab a cup of ') + chalk.magenta(''));
-      resolve();
-      return null;
+    const items = [];
+    fs.readFile(getConfigFolder(), 'utf-8', (err, data) => {
+      if (err) {
+        return resolve(items);
+      }
+
+      data.split('\r\n').forEach((line) => {
+        if (line.indexOf('data_path') > -1) {
+          dataPath = line.split('=')[1].trim();
+        }
+      });
+
+      return resolve();
     });
+  });
+}
+
+async function writeData(description) {
+  await loadConfig();
+  return new Promise((resolve) => {
+    fs.writeFile(
+      getDataFolder(),
+      `${moment(new Date()).format('DD/MM/YYYY')},${description}\r\n`,
+      { flag: 'a+' },
+      (err) => {
+        if (err) return console.log(err);
+        console.log(
+          chalk.green('Awesome! Grab a cup of ') + chalk.magenta(''),
+        );
+        resolve();
+        return null;
+      },
+    );
   });
 }
 
 function readCsv() {
   return new Promise((resolve) => {
     const items = [];
-    fs.readFile(csvFilename, 'utf8', (err, data) => {
+    fs.readFile(getDataFolder(), 'utf8', (err, data) => {
       if (err) {
         return resolve(items);
       }
@@ -44,6 +79,7 @@ function readCsv() {
 }
 
 async function printSummary(detailed) {
+  await loadConfig();
   const data = await readCsv();
   if (detailed) {
     data.forEach((item) => {
@@ -67,19 +103,31 @@ async function printSummary(detailed) {
 }
 
 yargs(hideBin(process.argv))
-  .command('add [description]', 'add thing done', (e) => e
-    .positional('description', {
+  .command(
+    'add [description]',
+    'add thing done',
+    (e) => e.positional('description', {
       describe: 'thing description',
-    }), async (argv) => {
-    await writeData(argv.description);
-  })
-  .command('summary', 'display a chart to show your progress', (e) => e,
+    }),
+    async (argv) => {
+      await writeData(argv.description);
+    },
+  )
+  .command(
+    'summary',
+    'display a chart to show your progress',
+    (e) => e,
     () => {
       printSummary(false);
-    })
-  .command('list', 'list all tasks done', (e) => e,
+    },
+  )
+  .command(
+    'list',
+    'list all tasks done',
+    (e) => e,
     () => {
       printSummary(true);
-    })
+    },
+  )
   .version(false)
   .parse();
