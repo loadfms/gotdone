@@ -5,6 +5,7 @@ import yargs from 'yargs';
 import { hideBin } from 'yargs/helpers';
 import fs from 'fs';
 import moment from 'moment';
+import { v4 as uuidv4 } from 'uuid';
 
 function getUserRootFolder() {
   return process.env.HOME || process.env.HOMEPATH || process.env.USERPROFILE;
@@ -44,7 +45,9 @@ async function writeData(description) {
   return new Promise((resolve) => {
     fs.writeFile(
       getDataFolder(),
-      `${moment(new Date()).format('DD/MM/YYYY')},${description}\r\n`,
+      `${uuidv4().substring(0, 4)},${moment(new Date()).format(
+        'DD/MM/YYYY',
+      )},${description}\r\n`,
       { flag: 'a+' },
       (err) => {
         if (err) return console.log(err);
@@ -66,11 +69,12 @@ function readCsv() {
         return resolve(items);
       }
       data.split('\r\n').forEach((line) => {
-        const date = line.split(',')[0];
-        const desc = line.split(',')[1];
+        const id = line.split(',')[0];
+        const date = line.split(',')[1];
+        const desc = line.split(',')[2];
 
-        if (date.length > 0) {
-          items.push({ date, desc });
+        if (id.length > 0) {
+          items.push({ id, date, desc });
         }
       });
       return resolve(items);
@@ -78,12 +82,18 @@ function readCsv() {
   });
 }
 
-async function printSummary(detailed) {
+async function printSummary(argv) {
+  const detailed = argv.d || argv.D;
+  const showId = argv.D;
   await loadConfig();
   const data = await readCsv();
+
   if (detailed) {
     data.forEach((item) => {
-      console.log(`${chalk.blue(item.date)}  ${chalk.green(item.desc)}`);
+      const idLabel = showId ? `${chalk.red(item.id)} - ` : '';
+      console.log(
+        `${idLabel}${chalk.blue(item.date)}  ${chalk.green(item.desc)}`,
+      );
     });
   } else {
     const map = new Map();
@@ -102,32 +112,67 @@ async function printSummary(detailed) {
   }
 }
 
-yargs(hideBin(process.argv))
-  .command(
-    'add [description]',
-    'add thing done',
-    (e) => e.positional('description', {
-      describe: 'thing description',
+async function removeItem(id) {
+  await loadConfig();
+  const data = await readCsv();
+
+  const newList = data.filter((x) => x.id.toString() !== id.toString());
+  let newFile = '';
+
+  newList.forEach((item) => {
+    newFile += `${item.id},${item.date},${item.desc}\r\n`;
+  });
+
+  return new Promise((resolve) => {
+    fs.writeFile(getDataFolder(), newFile, {}, (err) => {
+      if (err) return console.log(err);
+      console.log(chalk.green('Item removed! ') + chalk.magenta('﯊'));
+      resolve();
+      return null;
+    });
+  });
+}
+
+const addCommand = {
+  command: 'add [description]',
+  desc: 'Add thing done',
+  builder: {},
+  handler: async (argv) => {
+    await writeData(argv.description);
+  },
+};
+
+const listCommand = {
+  command: 'list',
+  desc: 'List all tasks done',
+  handler: (argv) => {
+    printSummary(argv);
+  },
+  builder: (y) => y
+    .option('details', {
+      alias: 'd',
+      desc: 'List all tasks details',
+      type: 'boolean',
+    })
+    .option('all-details', {
+      alias: 'D',
+      desc: 'List all tasks details',
+      type: 'boolean',
     }),
-    async (argv) => {
-      await writeData(argv.description);
-    },
-  )
-  .command(
-    'summary',
-    'display a chart to show your progress',
-    (e) => e,
-    () => {
-      printSummary(false);
-    },
-  )
-  .command(
-    'list',
-    'list all tasks done',
-    (e) => e,
-    () => {
-      printSummary(true);
-    },
-  )
-  .version(false)
+};
+
+const removeCommand = {
+  command: 'remove [id]',
+  desc: 'Remove item',
+  builder: {},
+  handler: async (argv) => {
+    await removeItem(argv.id);
+  },
+};
+
+yargs(hideBin(process.argv))
+  .command(addCommand)
+  .command(listCommand)
+  .command(removeCommand)
+  .wrap(null)
   .parse();
