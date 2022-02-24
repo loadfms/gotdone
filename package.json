@@ -1,6 +1,6 @@
 {
   "name": "@loadfms/gotdone",
-  "version": "1.0.8",
+  "version": "1.0.9",
   "description": "A new and joyfull way to track your things.",
   "main": "index.js",
   "type": "module",
