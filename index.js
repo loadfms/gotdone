@@ -40,14 +40,14 @@ function loadConfig() {
   });
 }
 
-async function writeData(description) {
+async function writeData(description, points, tag) {
   await loadConfig();
   return new Promise((resolve) => {
     fs.writeFile(
       getDataFolder(),
       `${uuidv4().substring(0, 4)},${moment(new Date()).format(
         'DD/MM/YYYY',
-      )},${description}\r\n`,
+      )},${description},${points},${tag}\r\n`,
       { flag: 'a+' },
       (err) => {
         if (err) return console.log(err);
@@ -72,9 +72,17 @@ function readCsv() {
         const id = line.split(',')[0];
         const date = line.split(',')[1];
         const desc = line.split(',')[2];
+        const points = parseInt(line.split(',')[3], 10);
+        const tag = line.split(',')[4];
 
         if (id.length > 0) {
-          items.push({ id, date, desc });
+          items.push({
+            id,
+            date,
+            desc,
+            points,
+            tag,
+          });
         }
       });
       return resolve(items);
@@ -92,14 +100,15 @@ async function printSummary(argv) {
     data.forEach((item) => {
       const idLabel = showId ? `${chalk.red(item.id)} - ` : '';
       console.log(
-        `${idLabel}${chalk.blue(item.date)}  ${chalk.green(item.desc)}`,
+        `${idLabel}${chalk.blue(item.date)}  ${chalk.yellow(
+          item.points,
+        )} ${chalk.magenta(item.tag)} ${chalk.green(item.desc)}`,
       );
     });
   } else {
     const map = new Map();
     data.forEach((item) => {
-      const count = map.get(item.date) ?? 0;
-      map.set(item.date, count + 1);
+      map.set(item.tag, (map.get(item.tag) ?? 0) + item.points);
     });
 
     const finalSummary = [];
@@ -108,6 +117,7 @@ async function printSummary(argv) {
       finalSummary.push({ label: key, count: value });
     });
 
+    finalSummary.sort((a, b) => b.count - a.count);
     console.log(chalk.green(barChart(finalSummary)));
   }
 }
@@ -120,7 +130,7 @@ async function removeItem(id) {
   let newFile = '';
 
   newList.forEach((item) => {
-    newFile += `${item.id},${item.date},${item.desc}\r\n`;
+    newFile += `${item.id},${item.date},${item.desc},${item.points},${item.tag}\r\n`;
   });
 
   return new Promise((resolve) => {
@@ -134,11 +144,30 @@ async function removeItem(id) {
 }
 
 const addCommand = {
-  command: 'add [description]',
-  desc: 'Add thing done',
-  builder: {},
+  command: 'add',
+  describe: 'Add thing done',
+  builder: {
+    description: {
+      type: 'string',
+      alias: 'd',
+      demandOption: true,
+      describe: 'Task description',
+    },
+    points: {
+      type: 'number',
+      alias: 'p',
+      describe: 'Task points',
+      demandOption: true,
+    },
+    tag: {
+      type: 'string',
+      alias: 't',
+      describe: 'Task tag',
+      demandOption: true,
+    },
+  },
   handler: async (argv) => {
-    await writeData(argv.description);
+    await writeData(argv.description, argv.points, argv.tag);
   },
 };
 
@@ -162,9 +191,15 @@ const listCommand = {
 };
 
 const removeCommand = {
-  command: 'remove [id]',
+  command: 'remove',
   desc: 'Remove item',
-  builder: {},
+  builder: {
+    id: {
+      type: 'string',
+      demandOption: true,
+      describe: 'Task id',
+    },
+  },
   handler: async (argv) => {
     await removeItem(argv.id);
   },

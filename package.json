@@ -1,6 +1,6 @@
 {
   "name": "@loadfms/gotdone",
-  "version": "1.0.9",
+  "version": "1.0.18",
   "description": "A new and joyfull way to track your things.",
   "main": "index.js",
   "type": "module",
@@ -11,7 +11,7 @@
     "gotdone": "index.js"
   },
   "author": "",
-  "license": "ISC",
+  "license": "MIT",
   "dependencies": {
     "bar-charts": "^1.0.3",
     "chalk": "^5.0.0",

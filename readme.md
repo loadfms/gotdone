@@ -11,9 +11,11 @@ This is a vanilla cli tool that provides a different way to track your achieveme
 Instead of creating a stressful todo-lists, how about create a joyful done
 list?
 
-## Installation
+## Install
 
-`$ npm install @loadfms/gotdone -g`
+```sh
+$ npm i @loadfms/gotdone -g
+```
 
 ## Configuration
 
@@ -24,24 +26,88 @@ You can set where data file should be stored. Just create a new file under ~/.co
 
 ## Usage
 
-### Add a done thing
+```sh
+$ gotdone --help
+```
 
-`gotdone add [description]`
+Help output:
 
-### Display a chart to show your progress over the time
+```
+gotdone [command]
 
-`gotdone list`
+Commands:
+  gotdone add     Add thing done
+  gotdone list    List all tasks done
+  gotdone remove  Remove item
 
-### Display all done things and dates
+Options:
+  --help     Show help  [boolean]
+  --version  Show version number  [boolean]
+```
 
-`gotdone list -d`
+## Available commands
 
-### Display all done things dates and ids
+- [add](#add)
+- [list](#list)
+- [remove](#remove)
 
-`gotdone list -D`
+### add
 
-### Remove a done thing
+```sh
+$ gotdone add --help
+```
 
-`gotdone remove [id]`
+Help output:
 
-Made with :heart:
+```
+gotdone add
+
+Add thing done
+
+Options:
+      --help         Show help  [boolean]
+  -d, --description  Task description  [string] [required]
+  -p, --points       Task points  [number] [required]
+  -t, --tag          Task tag  [string] [required]
+```
+
+### list
+
+```sh
+$ gotdone list --help
+```
+
+Help output:
+
+```
+gotdone list
+
+List all tasks done
+
+Options:
+      --help         Show help  [boolean]
+  -d, --details      List all tasks details  [boolean]
+  -D, --all-details  List all tasks details  [boolean]
+```
+
+### remove
+
+```sh
+$ gotdone remove --help
+```
+
+Help output:
+
+```
+gotdone remove
+
+Remove item
+
+Options:
+  --help     Show help  [boolean]
+  --id       Task id  [string] [required]
+```
+
+## License
+
+MIT.
