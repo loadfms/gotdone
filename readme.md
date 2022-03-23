@@ -20,9 +20,9 @@ $ npm i @loadfms/gotdone -g
 ## Configuration
 
 You can set where data file should be stored. Just create a new file under ~/.config/gotdone/config and add the line:
-`data_path = PATH_TO_DATA_FILE`
+eg. `data_path = $HOME/.config/gotdone`
 
-> Obs: If a path is not provided the default location will be used (HOME_DIRECTORY/config).
+> Obs: If a path is not provided the default location will be used ($HOME/.config/gotdone).
 
 ## Usage
 

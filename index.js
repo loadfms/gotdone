@@ -15,7 +15,7 @@ function getConfigFolder() {
   return `${getUserRootFolder()}/.config/gotdone/config`;
 }
 
-let dataPath = `${getUserRootFolder()}`;
+let dataPath = `${getUserRootFolder()}/.config/gotdone`;
 
 function getDataFolder() {
   return `${dataPath}/data`;
@@ -32,6 +32,7 @@ function loadConfig() {
       data.split('\r\n').forEach((line) => {
         if (line.indexOf('data_path') > -1) {
           dataPath = line.split('=')[1].trim();
+          dataPath = dataPath.replace('$HOME', getUserRootFolder());
         }
       });
 
