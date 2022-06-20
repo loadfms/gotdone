@@ -41,14 +41,14 @@ function loadConfig() {
   });
 }
 
-async function writeData(description, points, tag) {
+async function writeData(description, points, tag, done) {
   await loadConfig();
   return new Promise((resolve) => {
     fs.writeFile(
       getDataFolder(),
       `${uuidv4().substring(0, 4)},${moment(new Date()).format(
         'DD/MM/YYYY',
-      )},${description},${points},${tag}\r\n`,
+      )},${description},${points},${tag},${done}\r\n`,
       { flag: 'a+' },
       (err) => {
         if (err) return console.log(err);
@@ -75,6 +75,7 @@ function readCsv() {
         const desc = line.split(',')[2];
         const points = parseInt(line.split(',')[3], 10);
         const tag = line.split(',')[4];
+        const done = line.split(',')[5] === 'true';
 
         if (id.length > 0) {
           items.push({
@@ -83,6 +84,7 @@ function readCsv() {
             desc,
             points,
             tag,
+            done,
           });
         }
       });
@@ -92,24 +94,35 @@ function readCsv() {
 }
 
 async function printSummary(argv) {
+  const onlyUncompleted = argv.u;
   const detailed = argv.d || argv.D;
   const showId = argv.D;
   await loadConfig();
   const data = await readCsv();
+  const title = onlyUncompleted ? "Todo items" : "Done items";
+
+  console.clear()
+  console.log(`${chalk.red("------------------")}`)
+  console.log(`${chalk.red("--")}  ${chalk.magenta(title)}  ${chalk.red("--")} `)
+  console.log(`${chalk.red("------------------")}`)
 
   if (detailed) {
     data.forEach((item) => {
-      const idLabel = showId ? `${chalk.red(item.id)} - ` : '';
-      console.log(
-        `${idLabel}${chalk.blue(item.date)}  ${chalk.yellow(
-          item.points,
-        )} ${chalk.magenta(item.tag)} ${chalk.green(item.desc)}`,
-      );
+      if (item.done == !onlyUncompleted) {
+        const idLabel = showId ? `${chalk.red(item.id)} - ` : '';
+        console.log(
+          `${idLabel}${chalk.blue(item.date)}  ${chalk.yellow(
+            item.points,
+          )} ${chalk.magenta(item.tag)} ${chalk.green(item.desc)}`,
+        );
+      }
     });
   } else {
     const map = new Map();
     data.forEach((item) => {
-      map.set(item.tag, (map.get(item.tag) ?? 0) + item.points);
+      if (item.done == !onlyUncompleted) {
+        map.set(item.tag, (map.get(item.tag) ?? 0) + item.points);
+      }
     });
 
     const finalSummary = [];
@@ -131,13 +144,38 @@ async function removeItem(id) {
   let newFile = '';
 
   newList.forEach((item) => {
-    newFile += `${item.id},${item.date},${item.desc},${item.points},${item.tag}\r\n`;
+    newFile += `${item.id},${item.date},${item.desc},${item.points},${item.tag},${item.done}\r\n`;
   });
 
   return new Promise((resolve) => {
     fs.writeFile(getDataFolder(), newFile, {}, (err) => {
       if (err) return console.log(err);
       console.log(chalk.green('Item removed! ') + chalk.magenta('﯊'));
+      resolve();
+      return null;
+    });
+  });
+}
+
+async function completeItem(id) {
+  await loadConfig();
+  const data = await readCsv();
+  let newFile = '';
+
+  for (let i = 0; i < data.length; i++) {
+    if (data[i].id.toString() === id) {
+      console.log(data[i].done = true)
+    }
+  }
+
+  data.forEach((item) => {
+    newFile += `${item.id},${item.date},${item.desc},${item.points},${item.tag},${item.done}\r\n`;
+  });
+
+  return new Promise((resolve) => {
+    fs.writeFile(getDataFolder(), newFile, {}, (err) => {
+      if (err) return console.log(err);
+      console.log(chalk.green('Item completed! ') + chalk.magenta('🎉'));
       resolve();
       return null;
     });
@@ -166,9 +204,16 @@ const addCommand = {
       describe: 'Task tag',
       demandOption: true,
     },
+    completed: {
+      type: 'boolean',
+      alias: 'c',
+      describe: 'Task completed',
+      demandOption: true,
+      default: true,
+    },
   },
   handler: async (argv) => {
-    await writeData(argv.description, argv.points, argv.tag);
+    await writeData(argv.description, argv.points, argv.tag, argv.completed);
   },
 };
 
@@ -188,8 +233,30 @@ const listCommand = {
       alias: 'D',
       desc: 'List all tasks details',
       type: 'boolean',
-    }),
+    })
+    .option('uncompleted', {
+      alias: 'u',
+      desc: 'List all uncompleted tasks',
+      type: 'boolean',
+      default: false
+    })
 };
+
+const completeCommand = {
+  command: 'complete',
+  desc: 'Complete item',
+  builder: {
+    id: {
+      type: 'string',
+      demandOption: true,
+      describe: 'Task id',
+    },
+  },
+  handler: async (argv) => {
+    await completeItem(argv.id);
+  },
+};
+
 
 const removeCommand = {
   command: 'remove',
@@ -210,5 +277,6 @@ yargs(hideBin(process.argv))
   .command(addCommand)
   .command(listCommand)
   .command(removeCommand)
+  .command(completeCommand)
   .wrap(null)
   .parse();
