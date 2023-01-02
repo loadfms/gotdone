@@ -11,20 +11,38 @@ function getUserRootFolder() {
   return process.env.HOME || process.env.HOMEPATH || process.env.USERPROFILE;
 }
 
-function getConfigFolder() {
-  return `${getUserRootFolder()}/.config/gotdone/config`;
+function getConfigPath() {
+  const path = `${getUserRootFolder()}/.config/gotdone`;
+
+  fs.access(path, (error) => {
+    if (error) {
+      fs.mkdir(path, (error) => {
+        if (error) console.log(error);
+      });
+    }
+  });
+  return `${path}/config`;
 }
 
 let dataPath = `${getUserRootFolder()}/.config/gotdone`;
 
-function getDataFolder() {
-  return `${dataPath}/data`;
+function getDataPath() {
+  const path = `${dataPath}`;
+
+  fs.access(path, (error) => {
+    if (error) {
+      fs.mkdir(path, (error) => {
+        if (error) console.log(error);
+      });
+    }
+  });
+  return `${path}/data`;
 }
 
 function loadConfig() {
   return new Promise((resolve) => {
     const items = [];
-    fs.readFile(getConfigFolder(), 'utf-8', (err, data) => {
+    fs.readFile(getConfigPath(), 'utf-8', (err, data) => {
       if (err) {
         return resolve(items);
       }
@@ -45,7 +63,7 @@ async function writeData(description, points, tag, done) {
   await loadConfig();
   return new Promise((resolve) => {
     fs.writeFile(
-      getDataFolder(),
+      getDataPath(),
       `${uuidv4().substring(0, 4)},${moment(new Date()).format(
         'DD/MM/YYYY',
       )},${description},${points},${tag},${done}\r\n`,
@@ -65,7 +83,7 @@ async function writeData(description, points, tag, done) {
 function readCsv() {
   return new Promise((resolve) => {
     const items = [];
-    fs.readFile(getDataFolder(), 'utf8', (err, data) => {
+    fs.readFile(getDataPath(), 'utf8', (err, data) => {
       if (err) {
         return resolve(items);
       }
@@ -148,7 +166,7 @@ async function removeItem(id) {
   });
 
   return new Promise((resolve) => {
-    fs.writeFile(getDataFolder(), newFile, {}, (err) => {
+    fs.writeFile(getDataPath(), newFile, {}, (err) => {
       if (err) return console.log(err);
       console.log(chalk.green('Item removed! ') + chalk.magenta('﯊'));
       resolve();
@@ -173,7 +191,7 @@ async function completeItem(id) {
   });
 
   return new Promise((resolve) => {
-    fs.writeFile(getDataFolder(), newFile, {}, (err) => {
+    fs.writeFile(getDataPath(), newFile, {}, (err) => {
       if (err) return console.log(err);
       console.log(chalk.green('Item completed! ') + chalk.magenta('🎉'));
       resolve();
