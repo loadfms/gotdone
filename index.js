@@ -11,32 +11,32 @@ function getUserRootFolder() {
   return process.env.HOME || process.env.HOMEPATH || process.env.USERPROFILE;
 }
 
-function getConfigPath() {
-  const path = `${getUserRootFolder()}/.config/gotdone`;
-
-  fs.access(path, (error) => {
+function createDir(path) {
+  fs.access(path, (error) => {
     if (error) {
-      fs.mkdir(path, (error) => {
-        if (error) console.log(error);
-      });
-    }
+      fs.mkdir(path, (error) => {
+        if (error) {
+          console.error(error);
+        }
+      });
+    }
   });
-  return `${path}/config`;
 }
 
 let dataPath = `${getUserRootFolder()}/.config/gotdone`;
+createDir(`${getUserRootFolder()}/.config`);
+createDir(dataPath);
+
+function getConfigPath() {
+  const path = `${dataPath}/config`;
+  createDir(path);
+  return `${path}`;
+}
 
 function getDataPath() {
-  const path = `${dataPath}`;
-
-  fs.access(path, (error) => {
-    if (error) {
-      fs.mkdir(path, (error) => {
-        if (error) console.log(error);
-      });
-    }
-  });
-  return `${path}/data`;
+  const path = `${dataPath}/data`;
+  createDir(path);
+  return `${path}`;
 }
 
 function loadConfig() {
